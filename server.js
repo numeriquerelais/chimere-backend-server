@@ -50,11 +50,7 @@ wss.on('connection', function connection(ws) {
     console.log(json)
 
     wss.clients.forEach(function each(client) {
-      if(client === ws && ws.name=="") {
-        let json = JSON.parse(data);
-        client.name = JSON.name;    
-      }
-      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
         client.send(data);
       }
     })
@@ -77,6 +73,6 @@ setInterval(() => {
   });
 }, 10000);
 
-server.listen(port, "0.0.0.0", ()=> {
+server.listen(port, "192.168.1.76", ()=> {
   console.log(`Server is listening on ${port}!`)
 })
