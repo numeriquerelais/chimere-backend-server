@@ -114,6 +114,6 @@ setInterval(() => {
   console.log(i/2)
 }, 10000);
 
-server.listen(port, "192.168.1.76", ()=> {
+server.listen(port, ()=> {
   console.log(`Server is listening on ${port}!`)
 })
