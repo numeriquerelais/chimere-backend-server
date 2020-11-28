@@ -2,12 +2,12 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const jwt = require('jsonwebtoken');
-
-const port = 4913;
+ 
+const port = process.env.PORT || 4913;
 const app = express();
 const server = http.createServer(app);
 
-server.version ='v.0.1.2';
+server.version ='v.0.1.3';
 
 const wss = new WebSocket.Server({ server })
 //const wss = new WebSocket.Server({port: port })
@@ -58,6 +58,12 @@ wss.on('connection', function connection(ws) {
   ws.on('close', () => {
     console.log("close")
     ws.isAlive = false;
+    ws.terminate();
+  });
+
+  server.on('open', function open() {
+    console.log('**** connected');
+    ws.send(Date.now());
   });
 
   ws.on('error', () => {
@@ -87,10 +93,11 @@ wss.on('connection', function connection(ws) {
 
 //renew token
 setInterval(() => {
-  console.log("renew token")
+  //console.log("renew token")
   wss.newtoken()
+  var i = 0;
   wss.clients.forEach((client) => {     
-      
+      i++;
       if (!client.isAlive) {
         //console.log(" ********* is dead:");
         return client.terminate();
@@ -103,6 +110,7 @@ setInterval(() => {
       client.isAlive = false;
       client.ping(null, false, true);
   });
+  console.log(i/2)
 }, 10000);
 
 server.listen(port, "192.168.1.76", ()=> {

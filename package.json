@@ -1,0 +1,18 @@
+{
+  "name": "chimere-backend-server",
+  "version": "0.1.3",
+  "description": "Backend de Chimère chat à messages éphémères",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
+    "ws": "^7.3.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "node server.js",
+    "start": "node server.js"
+  },
+  "author": "dio",
+  "license": "MIT"
+}
