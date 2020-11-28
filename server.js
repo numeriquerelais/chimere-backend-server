@@ -2,8 +2,8 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const jwt = require('jsonwebtoken');
-
-const port = 4913;
+ 
+const port = process.env.PORT || 4913;
 const app = express();
 const server = http.createServer(app);
 
