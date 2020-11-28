@@ -11,6 +11,7 @@ server.version ='v.0.1.3';
 
 const wss = new WebSocket.Server({ server })
 //const wss = new WebSocket.Server({port: port })
+//https://atomrace.com/creer-serveur-websocket-socket-io/
 
 
 wss.newtoken = () => {
@@ -82,7 +83,7 @@ wss.on('connection', function connection(ws) {
         client.send(data);
       }
       else {
-        if(data.extra?.token==undefined) {
+        if(!(data.extra!=undefined && data.extra.token!=undefined)) {
           client.send(wss.getTokenMessage());
         }
       }
