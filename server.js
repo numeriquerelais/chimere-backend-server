@@ -13,7 +13,9 @@ const wss = new WebSocket.Server({ server });
 //const wss = new WebSocket.Server({port: port })
 //https://atomrace.com/creer-serveur-websocket-socket-io
 
+var cycle=0;
 wss.newtoken = (room) => {
+  //console.log('****\ncycle '+ (cycle++).toString() +': renew token\n****')
   return {
     token:jwt.sign({ userId: "chimere"+room??"" }, 'RANDOM_TOKEN_SECRET', { expiresIn: '1h' }),
     date : new Date()
@@ -23,20 +25,75 @@ wss.newtoken = (room) => {
 wss.getTokenMessage = (extra) => {
   return JSON.stringify({
     name:"systeme",
-    content : "",
-    type: 6,
+    type: 6, //Message.System
     extra: extra
   })
 }
 
 wss.rooms = [];
 
+addSenderToRoom = (ws, sender, roomName) => {
+  ws.name = sender;
+  ws.room = roomName;
+  console.log('- addSenderToRoom room',{roomName : roomName, user : sender })
+  
+  const room = wss.rooms.find(r=> r.name == roomName);
+
+  if(!room)
+  {
+    let room = {
+      name : roomName,
+      users : [],
+      token : wss.newtoken()
+    }
+    room.users.push(ws);
+
+    console.log('\tCreate room:',roomName, ' with user:',sender)   
+
+    wss.rooms = [
+        room
+      , ...wss.rooms
+    ]
+  }
+  else {
+    if(!room.users.some(user=> user.name === sender)) {
+      console.log('\t Add user:',sender, ' to room:',roomName)
+      room.users.push(ws)
+    }
+    else {
+      console.log('\t Not add user:',sender, ' to room:',roomName, ' already exists')
+    }
+  }
+}
+
+broadcastMessage = (ws, room, message, data)=>{
+  console.log('- broadcastMessage room',{roomName : room.name, NbWebSocket: room.users.length })
+  room.users.forEach(userWs => 
+    {
+      if (userWs !== ws && userWs.readyState === WebSocket.OPEN) 
+      {
+        console.log('\tfrom:',message.name, 'to', userWs.name)
+        userWs.send(data);
+      }
+      else 
+      {
+        if(!(data.extra!=undefined && data.extra.token!=undefined)) {
+        //if(message.type === 4) {
+          console.log("\tData",data)
+          userWs.send(wss.getTokenMessage(room.token));
+        }
+      }
+    })
+}
+
 changeRoom = (socket, server) => {
+  console.log('changeRoom')
   socket.isAlive = false;
   server.rooms.find(room => { room.users = room.users.filter(user => user !== socket)});
 }
 
 close = (socket, server) => {
+  console.log('close')
   socket.isAlive = false;
   server.rooms.find(room => { room.users = room.users.filter(user => user !== socket)});
   socket.terminate();
@@ -45,6 +102,8 @@ close = (socket, server) => {
 app.get('*', function(req, res, next) {
   return res.send('Hello World!');
 });
+
+var comm=0;
 
 wss.on('connection', function connection(ws) {
 
@@ -59,17 +118,17 @@ wss.on('connection', function connection(ws) {
   })
 
   server.on('upgrade', async function upgrade(request, socket, head) {
-    console.log('upgrade'/*,request, socket, head*/);
+    //console.log('upgrade'/*,request, socket, head*/);
   }); 
 
   ws.on('pong', () => {
-    //console.log("pong")
+    console.log("pong")
     ws.isAlive = true;
   });
 
   ws.on('close', () => {
-    /*console.log("close");
-    ws.isAlive = false;
+    console.log("close");
+    /*ws.isAlive = false;
     wss.rooms.find(room => { room.users = room.users.filter(user => user !== ws)});
     ws.terminate();*/
     close(ws,wss)
@@ -88,51 +147,25 @@ wss.on('connection', function connection(ws) {
   })
 
   ws.on('message', function incoming(data) {
+    console.log('\n****\n comm : '+(comm++).toString() )
     let message = JSON.parse(data);
-    console.log('message',message)
+    //console.log('message',message)
     
+    //MessageType.Disconnection
     if(message.type === 5) {
       changeRoom(ws,wss)
     }
+    //MessageType.Connection
     else if(message.type === 4) {
-      
-      ws.name = message.name;
-      ws.room = message.room;
-
-      if(wss.rooms.filter(r=> r.name == message.room).length === 0)
-      {
-        let room = {
-          name : message.room,
-          users : [],
-          token : wss.newtoken()
-        }
-        room.users.push(ws);
-
-        wss.rooms = [
-            room
-          , ...wss.rooms
-        ]
-      }
-      else wss.rooms.find(r=> r.name ==message.room).users.push(ws)
-    }
+      addSenderToRoom(this,message.name, message.room);
+    }    
     
-
+    //MessageType.Message
     wss.rooms.filter(r=> r.name == message.room).forEach(room => 
     { 
-      room.users.forEach(user => 
-      {
-        if (user !== ws && user.readyState === WebSocket.OPEN) 
-        {
-          user.send(data);
-        }
-        else 
-        {
-          if(!(data.extra!=undefined && data.extra.token!=undefined)) 
-          //if(message.type === 4) {
-            user.send(wss.getTokenMessage(room.token));
-        }
-      })
+      broadcastMessage(this,room, message, data);
     })
+    console.log('fin com\n****')
   })
 })
 
@@ -144,8 +177,10 @@ setInterval(() => {
   wss.rooms.map(room => {
     room.token = wss.newtoken(room.name);
 
+    //console.log("room",room, "users",room.users);
+
     room.users.map(user => {
-      console.log("room:"+room.name,"user:"+user.name/*,"token:"+room.token.token*/)
+      //console.log("room:"+room.name,"user:"+user.name/*,"token:"+room.token.token*/)
       i++;
       if (!user.isAlive) {
         //console.log(" ********* is dead:");
@@ -153,11 +188,12 @@ setInterval(() => {
       }
       else {
         //console.log(" ********* is alive ");
-        user.send(wss.getTokenMessage(room.token));
+        let getTokenMessage = wss.getTokenMessage(room.token)
+        user.send(getTokenMessage);
       }
       
-      user.isAlive = false;
-      user.ping(null, false, true);
+      //user.isAlive = false;
+      //user.ping(null, false, true);
     })
   })
   //console.log(i/2)
