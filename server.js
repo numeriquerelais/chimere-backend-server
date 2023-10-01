@@ -92,7 +92,7 @@ setInterval(() => {
   wss.clients.forEach((client) => {     
       
       if (!client.isAlive) {
-        //console.log(" ********* is dead:");
+        console.log(" ********* is dead:");
         return client.terminate();
       }
       else {
