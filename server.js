@@ -87,7 +87,7 @@ wss.on('connection', function connection(ws) {
 
 //renew token
 setInterval(() => {
-  console.log("renew token")
+  //console.log("renew token")
   wss.newtoken()
   wss.clients.forEach((client) => {     
       
@@ -96,7 +96,7 @@ setInterval(() => {
         return client.terminate();
       }
       else {
-        console.log(" ********* is alive ");
+        //console.log(" ********* is alive ");
         client.send(wss.getTokenMessage());
       }
       
