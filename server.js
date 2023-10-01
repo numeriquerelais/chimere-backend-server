@@ -96,7 +96,7 @@ setInterval(() => {
         return client.terminate();
       }
       else {
-        //console.log(" ********* is alive ");
+        console.log(" ********* is alive ");
         client.send(wss.getTokenMessage());
       }
       
