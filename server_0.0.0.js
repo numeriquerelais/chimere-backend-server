@@ -17,7 +17,7 @@ server.on('header', (headers, request) => {
       result++;
     }
   });
-
+//test
   console.info("Total connected clients:", result);
 
   socket.on('open', function open() {
